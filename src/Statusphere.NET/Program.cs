@@ -16,10 +16,7 @@ builder.Services.AddHttpClient<StatusphereAuthenticationService>(httpClient =>
     httpClient.BaseAddress = new Uri("https://bsky.social");
 });
 
-builder.Services.AddHttpClient<DidClient>(httpClient =>
-{
-    httpClient.BaseAddress = new Uri("https://plc.directory");
-});
+builder.Services.AddHttpClient<DidClient>();
 
 services.AddDbContextFactory<StatusphereDbContext>(o => o.UseSqlite("Data Source=Statusphere.db"));
 

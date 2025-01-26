@@ -40,7 +40,7 @@
             if (DidToHandleMap.ContainsKey(did))
                 continue;
             
-            var didDocument = await DidClient.GetDidDoc(did);
+            var didDocument = await DidClient.GetDidDocument(did);
             DidToHandleMap.Add(did, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
         }
     }

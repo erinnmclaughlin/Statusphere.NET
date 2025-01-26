@@ -10,6 +10,7 @@ public class StatusphereAuthenticationService(HttpClient httpClient)
     public async Task SignInAsync(HttpContext context, string identifier, string password)
     {
         const string uri = "xrpc/com.atproto.server.createSession";
+        
         var response = await httpClient.PostAsJsonAsync(uri, new { identifier, password });
         response.EnsureSuccessStatusCode();
             
