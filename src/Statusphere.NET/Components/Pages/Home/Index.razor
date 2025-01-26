@@ -1,0 +1,64 @@
+﻿@page "/"
+@attribute [StreamRendering]
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using Statusphere.NET.Database
+
+<PageTitle>Home</PageTitle>
+
+<div class="card">
+    <SessionGreeting />
+</div>
+
+<StatusForm CurrentStatus="MyStatus" CurrentStatusChanged="OnStatusChanged" />
+
+<StatusTimeline Statuses="Statuses" />
+
+@code {
+
+    private Status? MyStatus { get; set; }
+    private List<Status> Statuses { get; set; } = [];
+
+    [Inject] 
+    private IDbContextFactory<StatusphereDbContext> DbContextFactory { get; set; } = null!;
+   
+    [CascadingParameter] 
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        Statuses = await dbContext.Statuses
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(10)
+            .AsNoTracking()
+            .ToListAsync();
+        
+        var authState = await AuthStateTask;
+
+        if (authState.User is not { Identity.IsAuthenticated: true } authenticatedUser)
+            return;
+
+        var did = authenticatedUser.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        MyStatus = await dbContext.Statuses
+            .Where(x => x.AuthorDid == did)
+            .OrderByDescending(x => x.CreatedAt)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+    }
+    
+    private async Task OnStatusChanged(Status? status)
+    {
+        if (status is null) return;
+        
+        MyStatus = status;
+        Statuses.Add(status);
+        StateHasChanged();
+        
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        dbContext.Statuses.Add(MyStatus);
+        await dbContext.SaveChangesAsync();
+    }
+}

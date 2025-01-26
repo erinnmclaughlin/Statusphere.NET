@@ -1,0 +1,61 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Log in</PageTitle>
+
+<EditForm Model="Input" method="post" OnValidSubmit="Submit" FormName="login">
+    <DataAnnotationsValidator/>
+    
+    <InputText @bind-Value="Input.Handle"
+               autocomplete="username"
+               id="Input.Handle"
+               placeholder="Enter your handle (eg alice.bsky.social)" />
+    
+    <InputText @bind-Value="Input.Password"
+               autocomplete="current-password"
+               id="Input.Password"
+               placeholder="******" />
+    
+    <button type="submit">Log in</button>
+</EditForm>
+
+@code {
+    [Inject] 
+    private StatusphereAuthenticationService AuthService { get; set; } = null!;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = null!;
+    
+    [SupplyParameterFromForm] 
+    private InputModel Input { get; set; } = new();
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = null!;
+    
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Clear the existing external cookie to ensure a clean login process
+            await HttpContext.SignOutAsync();
+        }
+    }
+    
+    private async Task Submit()
+    {
+        await AuthService.SignInAsync(HttpContext, Input.Handle, Input.Password);
+        NavigationManager.NavigateTo(ReturnUrl ?? "");
+    }
+
+    public class InputModel
+    {
+        [Required]
+        public string Handle { get; set; } = "";
+        
+        [Required]
+        public string Password { get; set; } = "";
+    }
+}

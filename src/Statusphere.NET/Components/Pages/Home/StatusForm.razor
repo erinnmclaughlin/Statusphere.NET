@@ -1,0 +1,74 @@
+﻿@using System.Security.Claims
+@using Statusphere.NET.Database
+
+<div>
+    <EditForm Enhance="true" Model="this" method="post" OnSubmit="SubmitStatus" FormName="status-form" class="status-options">
+        @foreach (var option in StatusOptions)
+        {
+            <button class="status-option @(option == CurrentStatus?.Value ? "selected" : "")" name="status" value="@option">
+                @option
+            </button>
+        }
+    </EditForm>
+</div>
+
+@code {
+    [CascadingParameter] 
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+    
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = null!;
+    
+    [Parameter]
+    public Status? CurrentStatus { get; set; }
+    
+    [Parameter]
+    public EventCallback<Status?> CurrentStatusChanged { get; set; }
+    
+    private async Task SubmitStatus()
+    {
+        var authState = await AuthStateTask;
+        var statusValue = HttpContext.Request.Form["status"];
+
+        if (statusValue == CurrentStatus || authState.User is not { Identity.IsAuthenticated: true } authenticatedUser)
+            return;
+
+        await CurrentStatusChanged.InvokeAsync(new Status
+        {
+            Uri = Guid.NewGuid().ToString(),
+            AuthorDid = authenticatedUser.FindFirstValue(ClaimTypes.NameIdentifier)!,
+            Value = statusValue
+        });
+    }
+    
+    private static readonly string[] StatusOptions = [  
+        "👍",
+        "👎",
+        "💙",
+        "🥹",
+        "😧",
+        "😤",
+        "🙃",
+        "😉",
+        "😎",
+        "🤓",
+        "🤨",
+        "🥳",
+        "😭",
+        "😤",
+        "🤯",
+        "🫡",
+        "💀",
+        "✊",
+        "🤘",
+        "👀",
+        "🧠",
+        "👩‍💻",
+        "🧑‍💻",
+        "🥷",
+        "🧌",
+        "🦋",
+        "🚀"
+    ];
+
+}
