@@ -1,0 +1,71 @@
+﻿@page "/statusinfo"
+@using Microsoft.AspNetCore.SignalR.Client
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+@implements IAsyncDisposable
+
+@if (!IsConnected)
+{
+    <p>Connecting...</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Did</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var status in Statuses)
+            {
+                <tr>
+                    <td>@status.AuthorDid</td>
+                    <td>@status.Status</td>
+                    <td>@status.CreatedAt</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private HubConnection HubConnection { get; set; } = null!;
+
+    private List<StatusDto> Statuses { get; set; } = new List<StatusDto>();
+
+    private bool IsConnected => HubConnection?.State == HubConnectionState.Connected;
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = null!;
+
+    public ValueTask DisposeAsync()
+    {
+        if (HubConnection is null)
+            return ValueTask.CompletedTask;
+
+        return HubConnection.DisposeAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ConnectAsync();
+    }
+
+    private async Task ConnectAsync()
+    {
+        HubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/hubs/status"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        HubConnection.On<StatusDto>("StatusCreated", (dto) =>
+        {
+            Statuses.Add(dto);
+            StateHasChanged();
+        });
+
+        await HubConnection.StartAsync();
+    }
+}

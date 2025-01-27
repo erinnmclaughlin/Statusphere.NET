@@ -21,10 +21,10 @@
 
     [Inject] 
     private IDbContextFactory<StatusphereDbContext> DbContextFactory { get; set; } = null!;
-   
+
     [CascadingParameter] 
     private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
-    
+
     protected override async Task OnInitializedAsync()
     {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
@@ -34,7 +34,7 @@
             .Take(10)
             .AsNoTracking()
             .ToListAsync();
-        
+
         var authState = await AuthStateTask;
 
         if (authState.User is not { Identity.IsAuthenticated: true } authenticatedUser)
@@ -48,15 +48,15 @@
             .AsNoTracking()
             .FirstOrDefaultAsync();
     }
-    
+
     private async Task OnStatusChanged(Status? status)
     {
         if (status is null) return;
-        
+
         MyStatus = status;
         Statuses.Add(status);
         StateHasChanged();
-        
+
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         dbContext.Statuses.Add(MyStatus);
         await dbContext.SaveChangesAsync();

@@ -2,11 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Statusphere.NET;
 using Statusphere.NET.Components;
 using Statusphere.NET.Database;
+using Statusphere.NET.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 
-services.AddRazorComponents().AddInteractiveServerComponents();
+services.AddRazorComponents()
+    .AddInteractiveServerComponents()
+    .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication().AddCookie();
@@ -17,6 +20,8 @@ builder.Services.AddHttpClient<StatusphereAuthenticationService>(httpClient =>
 });
 
 builder.Services.AddHttpClient<DidClient>();
+
+builder.Services.AddSignalR();
 
 services.AddDbContextFactory<StatusphereDbContext>(o => o.UseSqlite("Data Source=Statusphere.db"));
 
@@ -29,7 +34,11 @@ services.AddHostedService<StatusUpdateSubscription>();
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseWebAssemblyDebugging();
+}
+else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true); 
     app.UseHsts();
@@ -40,6 +49,11 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode()
+    .AddInteractiveWebAssemblyRenderMode()
+    .AddAdditionalAssemblies(typeof(Statusphere.NET.Client._Imports).Assembly);
+
+app.MapHub<StatusHub>("/hubs/status");
 
 app.Run();

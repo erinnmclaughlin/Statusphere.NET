@@ -27,21 +27,39 @@
 @code {
     [Inject] 
     private DidClient DidClient { get; set; } = null!;
-    
+
+    [Inject]
+    private ILogger<StatusTimeline> Logger { get; set; } = null!;
+
     [Parameter, EditorRequired]
     public required List<Status> Statuses { get; set; }
-    
+
     private Dictionary<string, string> DidToHandleMap { get; set; } = [];
+
+    public async Task AddStatus(Status status)
+    {
+        Logger.LogInformation("adding status!");
+        await ValidateDid(status.AuthorDid);
+        Statuses.Add(status);
+        StateHasChanged();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
+        Logger.LogInformation("Parameters set");
+
         foreach (var did in Statuses.Select(x => x.AuthorDid).Distinct())
         {
-            if (DidToHandleMap.ContainsKey(did))
-                continue;
-            
-            var didDocument = await DidClient.GetDidDocument(did);
-            DidToHandleMap.Add(did, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
+            await ValidateDid(did);
         }
+    }
+
+    private async Task ValidateDid(string did)
+    {
+        if (DidToHandleMap.ContainsKey(did))
+            return;
+
+        var didDocument = await DidClient.GetDidDocument(did);
+        DidToHandleMap.Add(did, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
     }
 }
