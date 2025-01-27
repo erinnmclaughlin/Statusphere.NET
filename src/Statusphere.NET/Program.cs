@@ -1,4 +1,3 @@
-using FishyFlip;
 using Microsoft.EntityFrameworkCore;
 using Statusphere.NET;
 using Statusphere.NET.Components;
@@ -21,7 +20,6 @@ builder.Services.AddHttpClient<DidClient>();
 
 services.AddDbContextFactory<StatusphereDbContext>(o => o.UseSqlite("Data Source=Statusphere.db"));
 
-// subscribe to firehose
 builder.Services.Configure<HostOptions>(x =>
 {
     x.ServicesStartConcurrently = true;
