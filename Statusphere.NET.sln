@@ -1,6 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Statusphere.NET", "src\Statusphere.NET\Statusphere.NET.csproj", "{C51103A8-A02B-4BFC-87F0-32E80BB3A7BC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A5C8CF22-4728-43EB-8B7F-7FE21C4B5E0B}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		Notes.md = Notes.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +21,8 @@ Global
 		{C51103A8-A02B-4BFC-87F0-32E80BB3A7BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C51103A8-A02B-4BFC-87F0-32E80BB3A7BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C51103A8-A02B-4BFC-87F0-32E80BB3A7BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

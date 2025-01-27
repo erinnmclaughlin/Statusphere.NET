@@ -20,6 +20,13 @@ builder.Services.AddHttpClient<DidClient>();
 
 services.AddDbContextFactory<StatusphereDbContext>(o => o.UseSqlite("Data Source=Statusphere.db"));
 
+builder.Services.Configure<HostOptions>(x =>
+{
+    x.ServicesStartConcurrently = true;
+    x.ServicesStopConcurrently = true;
+});
+services.AddHostedService<StatusUpdateSubscription>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
