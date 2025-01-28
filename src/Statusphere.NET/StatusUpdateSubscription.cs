@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using PeterO.Cbor;
+using Statusphere.NET.Client;
 using Statusphere.NET.Database;
+using Statusphere.NET.Hubs;
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Net.WebSockets;
@@ -9,10 +12,11 @@ using System.Text.Json.Serialization;
 
 namespace Statusphere.NET;
 
-public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbContext> dbContextFactory, ILogger<StatusUpdateSubscription> logger) : BackgroundService
+public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbContext> dbContextFactory, ILogger<StatusUpdateSubscription> logger, IHubContext<StatusHub> statusHubContext) : BackgroundService
 {
     private readonly IDbContextFactory<StatusphereDbContext> _dbContextFactory = dbContextFactory;
     private readonly ILogger<StatusUpdateSubscription> _logger = logger;
+    private readonly IHubContext<StatusHub> _statusHubContext = statusHubContext;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -136,11 +140,19 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
             }
 
             if (statusMessage is not null && metaData is not null)
-                await PersistMessage(statusMessage, metaData);
+            {
+                _logger.LogInformation("Received new status message. Persisting...");
+                var status = await PersistMessage(statusMessage, metaData);
+
+                var dto = new StatusDto(status.AuthorDid, status.Value, status.CreatedAt);
+                _logger.LogInformation("Status persisted. Sending to clients. {@Status}", dto);
+
+                await _statusHubContext.Clients.All.SendAsync("StatusCreated", dto, CancellationToken.None);
+            }
         }
     }
 
-    private async Task PersistMessage(StatusMessage message, EventMetaData eventData)
+    private async Task<Status> PersistMessage(StatusMessage message, EventMetaData eventData)
     {
         await using var dbContext = _dbContextFactory.CreateDbContext();
         var status = new Status
@@ -150,8 +162,9 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
             Value = message.Status,
             AuthorDid = eventData.Did
         };
-        await dbContext.Statuses.AddAsync(status);
+        dbContext.Statuses.Add(status);
         await dbContext.SaveChangesAsync();
+        return status;
     }
 }
 

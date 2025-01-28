@@ -1,0 +1,113 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@inject PersistentComponentState ApplicationState
+@implements IAsyncDisposable
+
+<div class="status-timeline">
+    @foreach (var (timestamp, status) in ValidStatuses.Reverse().Take(10))
+    {
+        <div class="status-line">
+            <div>
+                <div class="status">@status.Status</div>
+            </div>
+            <div class="desc">
+                <a class="author" href="https://bsky.app/profile/@status.AuthorDid" target="_blank">
+                    @DidToHandleMap.GetValueOrDefault(status.AuthorDid, "Someone")
+                </a>
+                @if (timestamp.Date == DateTime.Today)
+                {
+                    <text> is feeling @status.Status <span title="@timestamp">today</span></text>
+                }
+                else
+                {
+                    <text> was feeling @status.Status on @timestamp</text>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private PersistingComponentStateSubscription _subscription;
+    private HubConnection? _hubConnection = null!;
+
+    private SortedList<DateTime, StatusDto> ValidStatuses { get; set; } = [];
+
+    [Inject] 
+    private DidClient DidClient { get; set; } = null!;
+    
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public required List<StatusDto> Statuses { get; set; }
+
+    private Dictionary<string, string> DidToHandleMap { get; set; } = [];
+
+    public ValueTask DisposeAsync()
+    {
+        _subscription.Dispose();
+
+        if (_hubConnection is null)
+            return ValueTask.CompletedTask;
+
+        return _hubConnection.DisposeAsync();
+    }
+
+    protected override void OnInitialized()
+    {
+        _subscription = ApplicationState.RegisterOnPersisting(Persist);
+
+        if (ApplicationState.TryTakeFromJson<Dictionary<string, string>>(nameof(DidToHandleMap), out var map) && map is not null)
+        {
+            DidToHandleMap = map;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        foreach (var status in Statuses)
+        {
+            if (!DidToHandleMap.ContainsKey(status.AuthorDid))
+            {
+                var didDocument = await DidClient.GetDidDocument(status.AuthorDid);
+                DidToHandleMap.Add(status.AuthorDid, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
+            }
+
+            ValidStatuses.TryAdd(status.CreatedAt.ToLocalTime(), status);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await ConnectAsync();
+    }
+
+    private Task Persist()
+    {
+        ApplicationState.PersistAsJson(nameof(DidToHandleMap), DidToHandleMap);
+        return Task.CompletedTask;
+    }
+
+    private async Task ConnectAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/hubs/status"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<StatusDto>("StatusCreated", async (dto) =>
+        {
+            if (!DidToHandleMap.ContainsKey(dto.AuthorDid))
+            {
+                var didDocument = await DidClient.GetDidDocument(dto.AuthorDid);
+                DidToHandleMap.Add(dto.AuthorDid, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
+            }
+
+            ValidStatuses.Add(dto.CreatedAt.ToLocalTime(), dto);
+            StateHasChanged();
+        });
+
+        await _hubConnection.StartAsync();
+    }
+}

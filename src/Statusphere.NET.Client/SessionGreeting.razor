@@ -1,0 +1,53 @@
+﻿@implements IDisposable
+
+<div class="session-greeting">
+    <AuthorizeView>
+        <Authorized Context="authState">
+            <div>
+                Hi, <strong>@(authState.User.Identity?.Name ?? "friend")</strong>. What's your status today?
+            </div>
+            <form action="logout" method="post">
+                <AntiforgeryToken />
+                <input type="hidden" name="returnUrl" value="@CurrentUrl" />
+                <button type="submit">Log out</button>
+            </form>
+        </Authorized>
+        <NotAuthorized>
+            <div>
+                <a href="login?returnUrl=@CurrentUrl">Log in</a> to set your status!
+            </div>
+            <div>
+                <a href="login?returnUrl=@CurrentUrl" class="button">Log in</a>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+@code {
+    private string CurrentUrl { get; set; } = "";
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = null!;
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    protected override void OnInitialized()
+    {
+        CurrentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateCurrentPage();
+        StateHasChanged();
+    }
+
+    private void UpdateCurrentPage()
+    {
+        CurrentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+    }
+}
