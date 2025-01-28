@@ -10,7 +10,7 @@ public class StatusphereAuthenticationService(IATProtoClient atProto, IBlueskyAc
     public async Task SignInAsync(HttpContext context, string identifier, string password)
     {
         var session = await atProto.CreateSession(identifier, password);
-        var profile = await bluesky.GetUserProfileAsync(session.Did, session.AccessToken);
+        var profile = await bluesky.GetUserProfileAsync(session.Did);
 
         var identity = new ClaimsIdentity("Bluesky");
         identity.AddClaims([

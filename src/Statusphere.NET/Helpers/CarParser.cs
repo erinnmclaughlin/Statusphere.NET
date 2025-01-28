@@ -17,7 +17,7 @@ public static class CarParser
         {
             int b = stream.ReadByte();
             if (b < 0)
-                throw new EndOfStreamException("Unexpected end of stream in variant.");
+                throw new EndOfStreamException("Unexpected end of stream in varint.");
 
             // 7 bits of value, 1 bit of continuation
             ulong value = (ulong)(b & 0x7F);

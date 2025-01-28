@@ -13,41 +13,28 @@ using Statusphere.NET.Hubs;
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 
-services.AddRazorComponents()
-    .AddInteractiveServerComponents()
-    .AddInteractiveWebAssemblyComponents();
+// Auth stuff:
+services.AddAuthentication().AddCookie(); 
+services.AddScoped<StatusphereAuthenticationService>();
 
-builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddAuthentication().AddCookie(); 
-builder.Services.AddScoped<AuthenticationStateProvider, StatusphereAuthenticationStateProvider>();
+// Blazor stuff:
+services.AddRazorComponents().AddInteractiveServerComponents().AddInteractiveWebAssemblyComponents();
+services.AddCascadingAuthenticationState();
+services.AddScoped<AuthenticationStateProvider, StatusphereAuthenticationStateProvider>();
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddTransient<AuthTokenHandler>();
+// ATProto / Bluesky stuff:
+services.AddATClient<IATProtoClient, ATProtoClient>("https://bsky.social");
+services.AddATClient<IBlueskyActorClient, BlueskyActorClient>("https://public.api.bsky.app");
+services.AddHttpClient<DidClient>(client => client.BaseAddress = new Uri(DidClient.DefaultBaseUri));
 
-builder.Services.AddHttpClient<IATProtoClient, ATProtoClient>(httpClient =>
-    {
-        httpClient.BaseAddress = new Uri("https://bsky.social");
-    })
-    .AddHttpMessageHandler<AuthTokenHandler>();
-
-builder.Services.AddHttpClient<IBlueskyActorClient, BlueskyActorClient>(httpClient =>
-{
-    httpClient.BaseAddress = new Uri("https://bsky.social");
-}).AddHttpMessageHandler<AuthTokenHandler>();
-
-builder.Services.AddScoped<StatusphereAuthenticationService>();
-//builder.Services.AddScoped<DidClient>();
-builder.Services.AddHttpClient<DidClient>(client => client.BaseAddress = new Uri(DidClient.DefaultBaseUri));
-builder.Services.AddSignalR();
-
+// Database stuff:
 services.AddDbContextFactory<StatusphereDbContext>(o => o.UseSqlite("Data Source=Statusphere.db"));
 
-builder.Services.Configure<HostOptions>(x =>
-{
-    x.ServicesStartConcurrently = true;
-    x.ServicesStopConcurrently = true;
-});
-services.AddHostedService<StatusUpdateSubscription>();
+// SignalR stuff (so we can update the UI in realtime!):
+services.AddSignalR();
+
+// Background job stuff (so we can process events from other users!):
+services.AddStatusUpdateListener();
 
 var app = builder.Build();
 
@@ -70,15 +57,6 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Statusphere.NET.Client._Imports).Assembly);
-
-app.MapGet("/api/statuses", async (StatusphereDbContext dbContext, [FromQuery] int limit = 10) =>
-{
-    return await dbContext.Statuses
-        .OrderByDescending(x => x.CreatedAt)
-        .Select(x => new StatusDto(x.AuthorDid, x.Value, x.CreatedAt))
-        .Take(limit)
-        .ToListAsync();
-});
 
 app.MapPost("/logout", async (HttpContext context, [FromForm] string? returnUrl = null) =>
 {
