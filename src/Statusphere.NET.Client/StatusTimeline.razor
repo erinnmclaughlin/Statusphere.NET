@@ -1,5 +1,5 @@
 ﻿@using Microsoft.AspNetCore.SignalR.Client
-@inject PersistentComponentState ApplicationState
+@using Statusphere.NET.Client.Did
 @implements IAsyncDisposable
 
 <div class="status-timeline">
@@ -26,7 +26,10 @@
     private SortedList<DateTime, StatusDto> ValidStatuses { get; set; } = [];
 
     [Inject] 
-    private DidClient DidClient { get; set; } = null!;
+    private PersistentComponentState ApplicationState { get; set; } = null!;
+    
+    [Inject] 
+    private IDidClient DidClient { get; set; } = null!;
     
     [Inject]
     private NavigationManager NavigationManager { get; set; } = null!;
@@ -50,9 +53,9 @@
     {
         _subscription = ApplicationState.RegisterOnPersisting(Persist);
 
-        if (ApplicationState.TryTakeFromJson<Dictionary<string, string>>(nameof(DidToHandleMap), out var map) && map is not null)
+        if (ApplicationState.TryTakeFromJson<Dictionary<string, string>>(nameof(DidToHandleMap), out var map))
         {
-            DidToHandleMap = map;
+            DidToHandleMap = map ?? [];
         }
     }
 

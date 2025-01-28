@@ -6,6 +6,7 @@ using Statusphere.NET;
 using Statusphere.NET.ATProto;
 using Statusphere.NET.Bluesky;
 using Statusphere.NET.Client;
+using Statusphere.NET.Client.Did;
 using Statusphere.NET.Components;
 using Statusphere.NET.Database;
 using Statusphere.NET.Hubs;
@@ -25,7 +26,7 @@ services.AddScoped<AuthenticationStateProvider, StatusphereAuthenticationStatePr
 // ATProto / Bluesky stuff:
 services.AddATClient<IATProtoClient, ATProtoClient>("https://bsky.social");
 services.AddATClient<IBlueskyActorClient, BlueskyActorClient>("https://public.api.bsky.app");
-services.AddHttpClient<DidClient>(client => client.BaseAddress = new Uri(DidClient.DefaultBaseUri));
+services.AddHttpClient<IDidClient, DidClient>(client => client.BaseAddress = new Uri(DidClient.DefaultBaseUri));
 
 // Database stuff:
 services.AddDbContextFactory<StatusphereDbContext>(o => o.UseSqlite("Data Source=Statusphere.db"));

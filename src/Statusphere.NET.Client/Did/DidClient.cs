@@ -1,9 +1,9 @@
 ﻿using System.Net.Http.Json;
 using System.Web;
 
-namespace Statusphere.NET.Client;
+namespace Statusphere.NET.Client.Did;
 
-public class DidClient(HttpClient httpClient)
+public class DidClient(HttpClient httpClient) : IDidClient
 {
     public const string DefaultBaseUri = "https://plc.directory/";
 
@@ -12,9 +12,4 @@ public class DidClient(HttpClient httpClient)
         var document = await httpClient.GetFromJsonAsync<DidDocument>(HttpUtility.UrlEncode(did));
         return document!;
     }
-}
-
-public sealed record DidDocument
-{
-    public required string[] AlsoKnownAs { get; init; }
 }
