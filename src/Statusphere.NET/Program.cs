@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Statusphere.NET;
+using Statusphere.NET.ATProto;
+using Statusphere.NET.Bluesky;
 using Statusphere.NET.Client;
 using Statusphere.NET.Components;
 using Statusphere.NET.Database;
@@ -21,11 +23,17 @@ builder.Services.AddScoped<AuthenticationStateProvider, StatusphereAuthenticatio
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<AuthTokenHandler>();
-builder.Services.AddHttpClient<StatusphereClient>(httpClient =>
+
+builder.Services.AddHttpClient<IATProtoClient, ATProtoClient>(httpClient =>
+    {
+        httpClient.BaseAddress = new Uri("https://bsky.social");
+    })
+    .AddHttpMessageHandler<AuthTokenHandler>();
+
+builder.Services.AddHttpClient<IBlueskyActorClient, BlueskyActorClient>(httpClient =>
 {
     httpClient.BaseAddress = new Uri("https://bsky.social");
 }).AddHttpMessageHandler<AuthTokenHandler>();
-
 
 builder.Services.AddScoped<StatusphereAuthenticationService>();
 //builder.Services.AddScoped<DidClient>();

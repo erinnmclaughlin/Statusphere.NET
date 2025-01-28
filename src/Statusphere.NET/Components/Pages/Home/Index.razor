@@ -1,16 +1,13 @@
 ﻿@page "/"
 @using System.Security.Claims
 @using Microsoft.EntityFrameworkCore
+@using Statusphere.NET.ATProto
 @using Statusphere.NET.Database
 
 <PageTitle>Home</PageTitle>
 
-<div class="card">
-    <SessionGreeting />
-</div>
-
+<SessionGreeting />
 <StatusForm CurrentStatus="MyStatus" CurrentStatusChanged="OnStatusChanged" />
-
 <StatusTimeline @rendermode="InteractiveAuto" Statuses="Statuses" />
 
 @code {
@@ -19,7 +16,7 @@
     private List<StatusDto> Statuses { get; set; } = [];
 
     [Inject] 
-    private StatusphereClient ApiClient { get; set; } = null!;
+    private IATProtoClient ApiClient { get; set; } = null!;
     
     [Inject] 
     private IDbContextFactory<StatusphereDbContext> DbContextFactory { get; set; } = null!;
@@ -62,6 +59,13 @@
         Statuses.Add(new StatusDto(status.AuthorDid, status.Value, status.CreatedAt));
         StateHasChanged();
 
-        await ApiClient.UpdateStatus(status);
+        var r = StatusRecord.FromDatabaseEntity(status);
+        
+        await ApiClient.PutRecord(
+            repo: status.AuthorDid,
+            collection: r.Type,
+            rkey: status.Uri,
+            record: r
+        );
     }
 }

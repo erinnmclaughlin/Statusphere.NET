@@ -1,6 +1,6 @@
-﻿namespace Statusphere.NET;
+namespace Statusphere.NET.Bluesky;
 
-public sealed record UserProfile
+public class BlueskyProfile
 {
     public required string Did { get; init; }
     public required string Handle { get; init; }

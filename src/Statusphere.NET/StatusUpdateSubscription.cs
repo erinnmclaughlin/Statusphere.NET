@@ -12,17 +12,17 @@ using System.Text.Json.Serialization;
 
 namespace Statusphere.NET;
 
-public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbContext> dbContextFactory, ILogger<StatusUpdateSubscription> logger, IHubContext<StatusHub> statusHubContext) : BackgroundService
+public sealed class StatusUpdateSubscription(
+    IDbContextFactory<StatusphereDbContext> dbContextFactory, 
+    ILogger<StatusUpdateSubscription> logger,
+    IHubContext<StatusHub> statusHubContext
+) : BackgroundService
 {
-    private readonly IDbContextFactory<StatusphereDbContext> _dbContextFactory = dbContextFactory;
-    private readonly ILogger<StatusUpdateSubscription> _logger = logger;
-    private readonly IHubContext<StatusHub> _statusHubContext = statusHubContext;
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var ws = new ClientWebSocket();
 
-        _logger.LogInformation("Connecting to WebSocket...");
+        logger.LogInformation("Connecting to WebSocket...");
         await ws.ConnectAsync(new Uri("wss://bsky.network/xrpc/com.atproto.sync.subscribeRepos"), stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested && ws.State is WebSocketState.Open)
@@ -37,7 +37,7 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
 
                 if (receiveResult.MessageType == WebSocketMessageType.Close)
                 {
-                    _logger.LogWarning("Server closed the connection.");
+                    logger.LogWarning("Server closed the connection.");
                     return;
                 }
 
@@ -63,7 +63,7 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
 
         if (byteArray.Length < 2)
         {
-            _logger.LogDebug("Skipping short frame of length={MessageLength}", byteArray.Length);
+            logger.LogDebug("Skipping short frame of length={MessageLength}", byteArray.Length);
             return;
         }
 
@@ -117,7 +117,7 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to parse DAG-CBOR string.");
+                logger.LogError(ex, "Failed to parse DAG-CBOR string.");
             }
         }
 
@@ -141,25 +141,25 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
 
             if (statusMessage is not null && metaData is not null)
             {
-                _logger.LogInformation("Received new status message. Persisting...");
+                logger.LogInformation("Received new status message. Persisting...");
                 var status = await PersistMessage(statusMessage, metaData);
 
                 var dto = new StatusDto(status.AuthorDid, status.Value, status.CreatedAt);
-                _logger.LogInformation("Status persisted. Sending to clients. {@Status}", dto);
+                logger.LogInformation("Status persisted. Sending to clients. {@Status}", dto);
 
-                await _statusHubContext.Clients.All.SendAsync("StatusCreated", dto, CancellationToken.None);
+                await statusHubContext.Clients.All.SendAsync("StatusCreated", dto, CancellationToken.None);
             }
         }
     }
 
     private async Task<Status> PersistMessage(StatusMessage message, EventMetaData eventData)
     {
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         
         var status = new Status
         {
             Uri = Guid.NewGuid().ToString(),
-            CreatedAt = DateTime.Parse(message.CreatedAt),
+            CreatedAt = DateTime.TryParse(message.CreatedAt, out var date) ? date : DateTime.UtcNow,
             Value = message.Status,
             AuthorDid = eventData.Did
         };

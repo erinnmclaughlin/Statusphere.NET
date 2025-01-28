@@ -1,13 +1,2 @@
 .card {
-    border-radius: 6px;
-    padding: 10px 16px;
-    background-color: #fff;
 }
-
-    .card > :first-child {
-        margin-top: 0;
-    }
-    
-    .card > :last-child {
-        margin-bottom: 0;
-    }
