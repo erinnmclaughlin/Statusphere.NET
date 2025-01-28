@@ -19,11 +19,15 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication().AddCookie(); 
 builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
 
-builder.Services.AddHttpClient<StatusphereAuthenticationService>(httpClient =>
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<AuthTokenHandler>();
+builder.Services.AddHttpClient<StatusphereClient>(httpClient =>
 {
     httpClient.BaseAddress = new Uri("https://bsky.social");
-});
+}).AddHttpMessageHandler<AuthTokenHandler>();
 
+
+builder.Services.AddScoped<StatusphereAuthenticationService>();
 builder.Services.AddScoped<DidClient>();
 
 builder.Services.AddSignalR();

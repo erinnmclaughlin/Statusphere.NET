@@ -19,6 +19,9 @@
     private List<StatusDto> Statuses { get; set; } = [];
 
     [Inject] 
+    private StatusphereClient ApiClient { get; set; } = null!;
+    
+    [Inject] 
     private IDbContextFactory<StatusphereDbContext> DbContextFactory { get; set; } = null!;
 
     [CascadingParameter] 
@@ -59,6 +62,8 @@
         Statuses.Add(new StatusDto(status.AuthorDid, status.Value, status.CreatedAt));
         StateHasChanged();
 
+        await ApiClient.UpdateStatus(status);
+        
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
         dbContext.Statuses.Add(MyStatus);
         await dbContext.SaveChangesAsync();
