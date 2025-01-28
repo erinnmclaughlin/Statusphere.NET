@@ -141,9 +141,12 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
 
             if (statusMessage is not null && metaData is not null)
             {
+                _logger.LogInformation("Received new status message. Persisting...");
                 var status = await PersistMessage(statusMessage, metaData);
 
                 var dto = new StatusDto(status.AuthorDid, status.Value, status.CreatedAt);
+                _logger.LogInformation("Status persisted. Sending to clients. {@Status}", dto);
+
                 await _statusHubContext.Clients.All.SendAsync("StatusCreated", dto, CancellationToken.None);
             }
         }
@@ -159,7 +162,7 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
             Value = message.Status,
             AuthorDid = eventData.Did
         };
-        await dbContext.Statuses.AddAsync(status);
+        dbContext.Statuses.Add(status);
         await dbContext.SaveChangesAsync();
         return status;
     }

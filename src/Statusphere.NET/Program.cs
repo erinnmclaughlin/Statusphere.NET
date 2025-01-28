@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Statusphere.NET;
+using Statusphere.NET.Client;
 using Statusphere.NET.Components;
 using Statusphere.NET.Database;
 using Statusphere.NET.Hubs;
@@ -12,14 +16,15 @@ services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddAuthentication().AddCookie();
+builder.Services.AddAuthentication().AddCookie(); 
+builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
 
 builder.Services.AddHttpClient<StatusphereAuthenticationService>(httpClient =>
 {
     httpClient.BaseAddress = new Uri("https://bsky.social");
 });
 
-builder.Services.AddHttpClient<DidClient>();
+builder.Services.AddScoped<DidClient>();
 
 builder.Services.AddSignalR();
 
@@ -53,6 +58,21 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Statusphere.NET.Client._Imports).Assembly);
+
+app.MapGet("/api/statuses", async (StatusphereDbContext dbContext, [FromQuery] int limit = 10) =>
+{
+    return await dbContext.Statuses
+        .OrderByDescending(x => x.CreatedAt)
+        .Select(x => new StatusDto(x.AuthorDid, x.Value, x.CreatedAt))
+        .Take(limit)
+        .ToListAsync();
+});
+
+app.MapPost("/logout", async (HttpContext context, [FromForm] string? returnUrl = null) =>
+{
+    await context.SignOutAsync();
+    return TypedResults.LocalRedirect($"~/{returnUrl}");
+});
 
 app.MapHub<StatusHub>("/hubs/status");
 

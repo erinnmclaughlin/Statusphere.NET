@@ -3,39 +3,15 @@
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @implements IAsyncDisposable
 
-@if (!IsConnected)
-{
-    <p>Connecting...</p>
-}
-else
-{
-    <table>
-        <thead>
-            <tr>
-                <th>Did</th>
-                <th>Status</th>
-                <th>Timestamp</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var status in Statuses)
-            {
-                <tr>
-                    <td>@status.AuthorDid</td>
-                    <td>@status.Status</td>
-                    <td>@status.CreatedAt</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+<StatusTimeline Statuses="Statuses" />
 
 @code {
     private HubConnection HubConnection { get; set; } = null!;
 
     private List<StatusDto> Statuses { get; set; } = new List<StatusDto>();
 
-    private bool IsConnected => HubConnection?.State == HubConnectionState.Connected;
+    [Inject]
+    private HttpClient HttpClient { get; set; } = null!;
 
     [Inject]
     private NavigationManager NavigationManager { get; set; } = null!;
@@ -51,6 +27,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         await ConnectAsync();
+
+        Statuses = (await HttpClient.GetFromJsonAsync<List<StatusDto>>("api/statuses"))!;
     }
 
     private async Task ConnectAsync()

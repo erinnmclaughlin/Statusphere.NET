@@ -1,5 +1,4 @@
 ﻿@page "/"
-@attribute [StreamRendering]
 @using System.Security.Claims
 @using Microsoft.EntityFrameworkCore
 @using Statusphere.NET.Database
@@ -7,17 +6,17 @@
 <PageTitle>Home</PageTitle>
 
 <div class="card">
-    <SessionGreeting />
+    <Statusphere.NET.Client.Layout.SessionGreeting />
 </div>
 
 <StatusForm CurrentStatus="MyStatus" CurrentStatusChanged="OnStatusChanged" />
 
-<StatusTimeline Statuses="Statuses" />
+<Statusphere.NET.Client.Pages.StatusTimeline @rendermode="InteractiveAuto" Statuses="Statuses" />
 
 @code {
 
     private Status? MyStatus { get; set; }
-    private List<Status> Statuses { get; set; } = [];
+    private List<StatusDto> Statuses { get; set; } = [];
 
     [Inject] 
     private IDbContextFactory<StatusphereDbContext> DbContextFactory { get; set; } = null!;
@@ -29,24 +28,27 @@
     {
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
 
-        Statuses = await dbContext.Statuses
-            .OrderByDescending(x => x.CreatedAt)
-            .Take(10)
-            .AsNoTracking()
-            .ToListAsync();
+        if (Statuses.Count == 0)
+        {
+            Statuses = await dbContext.Statuses
+               .OrderByDescending(x => x.CreatedAt)
+               .Select(x => new StatusDto(x.AuthorDid, x.Value, x.CreatedAt))
+               .Take(10)
+               .ToListAsync();
+        }
 
         var authState = await AuthStateTask;
 
-        if (authState.User is not { Identity.IsAuthenticated: true } authenticatedUser)
-            return;
+        if (authState.User is { Identity.IsAuthenticated: true } authenticatedUser)
+        {
+            var did = authenticatedUser.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var did = authenticatedUser.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        MyStatus = await dbContext.Statuses
-            .Where(x => x.AuthorDid == did)
-            .OrderByDescending(x => x.CreatedAt)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
+            MyStatus = await dbContext.Statuses
+                .OrderByDescending(x => x.CreatedAt)
+                .Where(x => x.AuthorDid == did)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+        }
     }
 
     private async Task OnStatusChanged(Status? status)
@@ -54,7 +56,7 @@
         if (status is null) return;
 
         MyStatus = status;
-        Statuses.Add(status);
+        Statuses.Add(new StatusDto(status.AuthorDid, status.Value, status.CreatedAt));
         StateHasChanged();
 
         await using var dbContext = await DbContextFactory.CreateDbContextAsync();
