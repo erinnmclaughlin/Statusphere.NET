@@ -13,7 +13,7 @@ This is a WIP .NET implementation of the [statusphere example app](https://githu
 3. `dotnet ef database update` (if you don't have EF CLI tools installed, run `dotnet tool install dotnet-ef --global`)
 4. `dotnet run`
 
-## Ohter Resources
+## Other Resources
 * [AT Protocol Docs](https://atproto.com/)
 * [Bluesky Docs](https://docs.bsky.app/)
 * [Tagz App](https://github.com/FritzAndFriends/TagzApp) -- another Blazor-based AT Protocol app (heavily referenced when creating this example app)
