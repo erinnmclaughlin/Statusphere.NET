@@ -6,12 +6,12 @@
 <PageTitle>Home</PageTitle>
 
 <div class="card">
-    <Statusphere.NET.Client.Layout.SessionGreeting />
+    <SessionGreeting />
 </div>
 
 <StatusForm CurrentStatus="MyStatus" CurrentStatusChanged="OnStatusChanged" />
 
-<Statusphere.NET.Client.Pages.StatusTimeline @rendermode="InteractiveAuto" Statuses="Statuses" />
+<StatusTimeline @rendermode="InteractiveAuto" Statuses="Statuses" />
 
 @code {
 

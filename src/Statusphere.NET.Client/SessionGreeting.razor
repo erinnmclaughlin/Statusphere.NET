@@ -24,7 +24,7 @@
 </div>
 
 @code {
-    public string CurrentUrl { get; private set; } = "";
+    private string CurrentUrl { get; set; } = "";
 
     [Inject]
     private NavigationManager NavigationManager { get; set; } = null!;
