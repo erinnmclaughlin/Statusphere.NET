@@ -11,7 +11,7 @@ namespace Statusphere.NET;
 // This is a server-side AuthenticationStateProvider that revalidates the security stamp for the connected user
 // every 30 minutes an interactive circuit is connected. It also uses PersistentComponentState to flow the
 // authentication state to the client which is then fixed for the lifetime of the WebAssembly application.
-public class PersistingRevalidatingAuthenticationStateProvider : RevalidatingServerAuthenticationStateProvider
+public class StatusphereAuthenticationStateProvider : RevalidatingServerAuthenticationStateProvider
 {
     private readonly PersistentComponentState _state;
     private readonly PersistingComponentStateSubscription _subscription;
@@ -20,12 +20,12 @@ public class PersistingRevalidatingAuthenticationStateProvider : RevalidatingSer
 
     protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(30);
 
-    public PersistingRevalidatingAuthenticationStateProvider(ILoggerFactory loggerFactory, IServiceScopeFactory scopeFactory, PersistentComponentState state) : base(loggerFactory)
+    public StatusphereAuthenticationStateProvider(ILoggerFactory loggerFactory, PersistentComponentState state) : base(loggerFactory)
     {
         _state = state;
 
         AuthenticationStateChanged += OnAuthenticationStateChanged;
-        _subscription = state.RegisterOnPersisting(OnPersistingAsync, RenderMode.InteractiveWebAssembly);
+        _subscription = _state.RegisterOnPersisting(OnPersistingAsync, RenderMode.InteractiveWebAssembly);
     }
 
     // todo: actually implement this

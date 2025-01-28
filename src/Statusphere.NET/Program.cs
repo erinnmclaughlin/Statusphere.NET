@@ -17,7 +17,7 @@ services.AddRazorComponents()
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication().AddCookie(); 
-builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider, StatusphereAuthenticationStateProvider>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<AuthTokenHandler>();
@@ -28,8 +28,8 @@ builder.Services.AddHttpClient<StatusphereClient>(httpClient =>
 
 
 builder.Services.AddScoped<StatusphereAuthenticationService>();
-builder.Services.AddScoped<DidClient>();
-
+//builder.Services.AddScoped<DidClient>();
+builder.Services.AddHttpClient<DidClient>(client => client.BaseAddress = new Uri(DidClient.DefaultBaseUri));
 builder.Services.AddSignalR();
 
 services.AddDbContextFactory<StatusphereDbContext>(o => o.UseSqlite("Data Source=Statusphere.db"));

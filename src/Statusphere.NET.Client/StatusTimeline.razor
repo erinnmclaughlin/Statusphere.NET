@@ -13,14 +13,7 @@
                 <a class="author" href="https://bsky.app/profile/@status.AuthorDid" target="_blank">
                     @DidToHandleMap.GetValueOrDefault(status.AuthorDid, "Someone")
                 </a>
-                @if (timestamp.Date == DateTime.Today)
-                {
-                    <text> is feeling @status.Status <span title="@timestamp">today</span></text>
-                }
-                else
-                {
-                    <text> was feeling @status.Status on @timestamp</text>
-                }
+                @(timestamp.ToUniversalTime().Date == DateTime.Today.ToUniversalTime() ? " is" : " was") feeling @status.Status on @timestamp.ToLocalTime()
             </div>
         </div>
     }
@@ -67,13 +60,7 @@
     {
         foreach (var status in Statuses)
         {
-            if (!DidToHandleMap.ContainsKey(status.AuthorDid))
-            {
-                var didDocument = await DidClient.GetDidDocument(status.AuthorDid);
-                DidToHandleMap.Add(status.AuthorDid, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
-            }
-
-            ValidStatuses.TryAdd(status.CreatedAt.ToLocalTime(), status);
+            await ValidateAndAddStatus(status);
         }
     }
 
@@ -96,18 +83,23 @@
             .WithAutomaticReconnect()
             .Build();
 
-        _hubConnection.On<StatusDto>("StatusCreated", async (dto) =>
+        _hubConnection.On<StatusDto>("StatusCreated", async dto =>
         {
-            if (!DidToHandleMap.ContainsKey(dto.AuthorDid))
-            {
-                var didDocument = await DidClient.GetDidDocument(dto.AuthorDid);
-                DidToHandleMap.Add(dto.AuthorDid, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
-            }
-
-            ValidStatuses.Add(dto.CreatedAt.ToLocalTime(), dto);
+            await ValidateAndAddStatus(dto);
             StateHasChanged();
         });
 
         await _hubConnection.StartAsync();
+    }
+
+    private async Task ValidateAndAddStatus(StatusDto status)
+    {
+        if (!DidToHandleMap.ContainsKey(status.AuthorDid))
+        {
+            var didDocument = await DidClient.GetDidDocument(status.AuthorDid);
+            DidToHandleMap.TryAdd(status.AuthorDid, didDocument.AlsoKnownAs[0].Replace("at://", "@"));
+        } 
+        
+        ValidStatuses.TryAdd(status.CreatedAt.ToUniversalTime(), status);
     }
 }

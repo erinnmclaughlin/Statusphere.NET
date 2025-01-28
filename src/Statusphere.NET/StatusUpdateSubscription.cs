@@ -154,7 +154,8 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
 
     private async Task<Status> PersistMessage(StatusMessage message, EventMetaData eventData)
     {
-        await using var dbContext = _dbContextFactory.CreateDbContext();
+        await using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        
         var status = new Status
         {
             Uri = Guid.NewGuid().ToString(),
@@ -162,6 +163,7 @@ public sealed class StatusUpdateSubscription(IDbContextFactory<StatusphereDbCont
             Value = message.Status,
             AuthorDid = eventData.Did
         };
+        
         dbContext.Statuses.Add(status);
         await dbContext.SaveChangesAsync();
         return status;

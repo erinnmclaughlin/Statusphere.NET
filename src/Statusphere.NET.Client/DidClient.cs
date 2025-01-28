@@ -3,14 +3,13 @@ using System.Web;
 
 namespace Statusphere.NET.Client;
 
-public class DidClient
+public class DidClient(HttpClient httpClient)
 {
-    private readonly HttpClient _httpClient = new();
+    public const string DefaultBaseUri = "https://plc.directory/";
 
     public async Task<DidDocument> GetDidDocument(string did)
     {
-        var uri = $"https://plc.directory/{HttpUtility.UrlEncode(did)}";
-        var document = await _httpClient.GetFromJsonAsync<DidDocument>(uri);
+        var document = await httpClient.GetFromJsonAsync<DidDocument>(HttpUtility.UrlEncode(did));
         return document!;
     }
 }

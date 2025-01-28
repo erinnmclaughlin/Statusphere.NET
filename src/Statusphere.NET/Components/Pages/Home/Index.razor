@@ -63,9 +63,5 @@
         StateHasChanged();
 
         await ApiClient.UpdateStatus(status);
-        
-        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
-        dbContext.Statuses.Add(MyStatus);
-        await dbContext.SaveChangesAsync();
     }
 }
