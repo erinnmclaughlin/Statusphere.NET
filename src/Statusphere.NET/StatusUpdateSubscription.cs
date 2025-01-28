@@ -9,6 +9,7 @@ using System.IO.Pipelines;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Statusphere.NET.Helpers;
 
 namespace Statusphere.NET;
 
@@ -123,14 +124,14 @@ public sealed class StatusUpdateSubscription(
 
         if (isStatusType)
         {
-            StatusMessage? statusMessage = null;
+            StatusRecord? statusMessage = null;
             EventMetaData? metaData = null;
 
             foreach (var (_, value) in dictionary)
             {
                 if (value["$type"]?.AsString() == "xyz.statusphere.status")
                 {
-                    statusMessage = JsonSerializer.Deserialize<StatusMessage>(value.ToJSONString());
+                    statusMessage = JsonSerializer.Deserialize<StatusRecord>(value.ToJSONString());
                 }
 
                 if (value["did"]?.AsString() is not null)
@@ -152,7 +153,7 @@ public sealed class StatusUpdateSubscription(
         }
     }
 
-    private async Task<Status> PersistMessage(StatusMessage message, EventMetaData eventData)
+    private async Task<Status> PersistMessage(StatusRecord message, EventMetaData eventData)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
         
@@ -168,15 +169,6 @@ public sealed class StatusUpdateSubscription(
         await dbContext.SaveChangesAsync();
         return status;
     }
-}
-
-public class StatusMessage
-{
-    [JsonPropertyName("status")]
-    public string Status { get; set; } = "";
-
-    [JsonPropertyName("createdAt")]
-    public string CreatedAt { get; set; } = "";
 }
 
 public class EventMetaData

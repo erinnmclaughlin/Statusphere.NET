@@ -1,4 +1,6 @@
-﻿namespace Statusphere.NET;
+﻿namespace Statusphere.NET.Helpers;
+
+// ty chatgpt <3
 
 public static class CarParser
 {
@@ -15,7 +17,7 @@ public static class CarParser
         {
             int b = stream.ReadByte();
             if (b < 0)
-                throw new EndOfStreamException("Unexpected end of stream in varint.");
+                throw new EndOfStreamException("Unexpected end of stream in variant.");
 
             // 7 bits of value, 1 bit of continuation
             ulong value = (ulong)(b & 0x7F);
