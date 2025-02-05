@@ -8,10 +8,15 @@ This is a WIP .NET implementation of the [statusphere example app](https://githu
 * Publish data on the user's account using a custom schema
 
 ## Running Locally
-1. Clone this repository.
-2. `cd src/Statusphere.NET`
-3. `dotnet ef database update` (if you don't have EF CLI tools installed, run `dotnet tool install dotnet-ef --global`)
-4. `dotnet run`
+```sh
+git clone https://github.com/erinnmclaughlin/Statusphere.NET.git
+cd src/Statusphere.NET
+# if you need to install ef cli tools: 
+# dotnet tool install dotnet-ef --global
+dotnet ef database update
+dotnet run
+```
+
 
 ## Other Resources
 * [AT Protocol Docs](https://atproto.com/)
