@@ -21,4 +21,3 @@ dotnet run
 ## Other Resources
 * [AT Protocol Docs](https://atproto.com/)
 * [Bluesky Docs](https://docs.bsky.app/)
-* [Tagz App](https://github.com/FritzAndFriends/TagzApp) -- another Blazor-based AT Protocol app (heavily referenced when creating this example app)
